@@ -1,23 +1,34 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { v4 as uuidv4 } from 'uuid'
 import type { ChangeEvent } from "react"
 import type { Activity } from "../types"
 import type { Dispatch } from "react"
 import type { FormEvent } from "react"
 import { categories } from "../data/categories"
-import type { ActivityActions } from "../reducers/activity-reducer"
+import type { ActivityActions, ActivityState } from "../reducers/activity-reducer"
 
 type FormProps = {
-    dispatch: Dispatch<ActivityActions>
+    dispatch: Dispatch<ActivityActions>,
+    state: ActivityState
 }
 
-export default function Form({dispatch} : FormProps) {
-  
-    const [activity, setActivity] = useState<Activity>({
+const initialState : Activity = {
+        id: uuidv4(),
         category: 1,
         name: '',
         calories: 0 // Usamos el State como un Objeto.
-    })
+    }
 
+export default function Form({dispatch, state} : FormProps) {
+  
+    const [activity, setActivity] = useState<Activity>(initialState)
+
+    useEffect(() => {
+        if(state.activeId) {
+            const selectedActivity = state.activities.filter( stateActivity => stateActivity.id === state.activeId )[0]
+            setActivity(selectedActivity)
+        }
+    }, [state.activeId])
 
     const handleChange = (e: ChangeEvent<HTMLSelectElement> | ChangeEvent<HTMLInputElement>) => {
         const isNumberField = ['category', 'calories'].includes(e.target.id) // si el id de lo que llenamos es alguno de esos dos sabemos que viene un numero
@@ -35,18 +46,23 @@ export default function Form({dispatch} : FormProps) {
         return name.trim() !== '' && calories > 0
     }
 
-
     const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
         dispatch({ type: "save-activity", payload: {newActivity: activity}})
+    
+        setActivity({
+            ...initialState,
+            id: uuidv4()
+        })
+
     }
 
   
     return (
     <form 
-    className="space-y-5 bg-white shadow p-10 rounded-lg"
-    onSubmit={handleSubmit}
+        className="space-y-5 bg-white shadow p-10 rounded-lg"
+        onSubmit={handleSubmit}
     >
 
         <div className="grid grid-cols-1 gap-3">
